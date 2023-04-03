@@ -1,91 +1,67 @@
-import Image from 'next/image'
-import { Inter } from 'next/font/google'
-import styles from './page.module.css'
+import Image from "next/image";
+import { Inter } from "next/font/google";
+import { documentToReactComponents } from "@contentful/rich-text-react-renderer";
 
-const inter = Inter({ subsets: ['latin'] })
+const inter = Inter({ subsets: ["latin"] });
 
-export default function Home() {
+async function getBlogs() {
+  const res = await fetch(
+    `https://cdn.contentful.com/spaces/${process.env.CONTENTFUL_SPACE_ID}/entries?access_token=${process.env.CONTENTFUL_ACCESS_KEY}&content_type=blog`
+  );
+
+  if (!res.ok) throw new Error("Failed to fetch data");
+  return res.json();
+}
+
+export default async function Home() {
+  const blogs = await getBlogs();
   return (
-    <main className={styles.main}>
-      <div className={styles.description}>
-        <p>
-          Get started by editing&nbsp;
-          <code className={styles.code}>src/app/page.tsx</code>
-        </p>
-        <div>
-          <a
-            href="https://vercel.com?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            By{' '}
-            <Image
-              src="/vercel.svg"
-              alt="Vercel Logo"
-              className={styles.vercelLogo}
-              width={100}
-              height={24}
-              priority
-            />
-          </a>
-        </div>
-      </div>
-
-      <div className={styles.center}>
-        <Image
-          className={styles.logo}
-          src="/next.svg"
-          alt="Next.js Logo"
-          width={180}
-          height={37}
-          priority
-        />
-        <div className={styles.thirteen}>
-          <Image src="/thirteen.svg" alt="13" width={40} height={31} priority />
-        </div>
-      </div>
-
-      <div className={styles.grid}>
-        <a
-          href="https://beta.nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-          className={styles.card}
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <h2 className={inter.className}>
-            Docs <span>-&gt;</span>
-          </h2>
-          <p className={inter.className}>
-            Find in-depth information about Next.js features and API.
-          </p>
-        </a>
-
-        <a
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-          className={styles.card}
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <h2 className={inter.className}>
-            Templates <span>-&gt;</span>
-          </h2>
-          <p className={inter.className}>Explore the Next.js 13 playground.</p>
-        </a>
-
-        <a
-          href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-          className={styles.card}
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <h2 className={inter.className}>
-            Deploy <span>-&gt;</span>
-          </h2>
-          <p className={inter.className}>
-            Instantly deploy your Next.js site to a shareable URL with Vercel.
-          </p>
-        </a>
-      </div>
+    <main>
+      {blogs.items.map((blog: any) => (
+        <>
+          <div>Blog Title: {blog.fields.title}</div>
+          <div>
+            Blog Description:
+            {documentToReactComponents(blog.fields.description)}
+          </div>
+          {blogs.includes.Asset.map((asset: any) => (
+            <>
+              <div>
+                {asset.sys.id === blog.fields.image.sys.id && (
+                  <Image
+                    src={`https:${asset.fields.file.url}`}
+                    alt={asset.fields.title}
+                    width={100}
+                    height={100}
+                  />
+                )}
+              </div>
+            </>
+          ))}
+          {blogs.includes.Entry.map((entry: any) => (
+            <>
+              {blog.fields.createdBy.sys.id === entry.sys.id && (
+                <div>
+                  <p>Author: {entry.fields.name}</p>
+                  <p>Author Image: </p>
+                  {blogs.includes.Asset.map((asset: any) => (
+                    <>
+                      {entry.fields.image.sys.id === asset.sys.id && (
+                        <Image
+                          src={`https:${asset.fields.file.url}`}
+                          alt={asset.fields.file.fileName}
+                          width={100}
+                          height={100}
+                        />
+                      )}
+                    </>
+                  ))}
+                </div>
+              )}
+            </>
+          ))}
+        </>
+      ))}
     </main>
-  )
+  );
 }
